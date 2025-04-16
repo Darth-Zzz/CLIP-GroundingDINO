@@ -20,4 +20,7 @@ def build_dataset(image_set, args, datasetinfo):
     if datasetinfo["dataset_mode"] == 'odvg':
         from .odvg import build_odvg
         return build_odvg(image_set, args, datasetinfo)
+    if datasetinfo["dataset_mode"] == 'myodvg':
+        from .odvg import build_myodvg
+        return build_myodvg(image_set, args, datasetinfo)
     raise ValueError(f'dataset {args.dataset_file} not supported')

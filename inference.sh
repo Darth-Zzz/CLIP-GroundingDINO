@@ -1,0 +1,6 @@
+python tools/inference_on_a_image.py \
+  -c tools/GroundingDINO_SwinT_OGC.py \
+  -p /data_hdd/zhouzizheng/test/checkpoint0002.pth \
+  -i /data_hdd/zhouzizheng/data/DetectEverything2/DOGE_202207071613_930.JPEG \
+  -o output \
+  -t "ExcelScreen . Dollar bill . EUR bill . middle finger . pdd logo . red popup . oppo . vivo . ZTE . Redmi . xiaomi letter . TPLink . Letv . Gionee . TCL . DASH . BTC . ETH . LTC . DOGE . army flag . FaLunGong . Cross . RMB coin . LG . PDB . Haier . RMB bill . CircleFriends . Induce click calling . taobao logo . Olympic . jd logo . candle 64 . snake . LionOfJudah . HKdollar bill . HKdollar coin . Dollar coin . message window . Farawaha . huawei share . Microsoft . click . SHIB . RedLionDay . RedCrescent . Yellow umbrella . League flag . Hunan tv . Cisco . Palestinian flag . Santa . Zombie . False msg tip . Honor of Kings . Tencent . Hisense . cigarette . iphone cameta . XRP . hamas flag . Colorful . Americal flag . Aryan flag . Headquarters flag . Jihad movement flag . H3C . Nazi salute . drug syringe . realme ." 

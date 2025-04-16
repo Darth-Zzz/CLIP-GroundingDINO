@@ -1,7 +1,7 @@
 GPU_NUM=1
 CFG=./config/cfg_odvg.py
 DATASETS=./config/test.json
-OUTPUT_DIR=/data_hdd/zhouzizheng/checkpoints
+OUTPUT_DIR=/data_hdd/zhouzizheng/test
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
 PORT=${PORT:-29500}

@@ -1,0 +1,19 @@
+{
+    "train": [
+      {
+        "root": "/data_hdd/zhouzizheng/data/Objects365-2020/test",
+        "anno": "/data_hdd/zhouzizheng/data/Objects365-2020/test/zhiyuan_objv2_test_odvg.jsonl",
+        "label_map": "/data_hdd/zhouzizheng/data/Objects365-2020/test/zhiyuan_objv2_test_label_map.json",
+        "coco": "/data_hdd/zhouzizheng/data/Objects365-2020/test/images/zhiyuan_objv2_test.json",
+        "dataset_mode": "myodvg"
+      }
+    ],
+    "val": [
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/val2014",
+        "anno": "/data_hdd/zhouzizheng/data/COCO2014/annotations/instances_val2014.json",
+        "label_map": null,
+        "dataset_mode": "coco"
+      }
+    ]
+}

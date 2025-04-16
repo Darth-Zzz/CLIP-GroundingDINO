@@ -25,6 +25,8 @@ from pycocotools.cocoeval import COCOeval
 
 from groundingdino.util.misc import all_gather
 
+# DEBUG
+import json
 
 class CocoGroundingEvaluator(object):
     def __init__(self, coco_gt, iou_types, useCats=True):
@@ -57,6 +59,26 @@ class CocoGroundingEvaluator(object):
             coco_eval = self.coco_eval[iou_type]
 
             coco_eval.cocoDt = coco_dt
+            # <DEBUG>
+
+            # print("\n\nDT: ")
+            # imgIds = coco_dt.getImgIds()
+            # print("imgIds: ", imgIds)
+            # imgId = 256
+            # annIds = coco_dt.getAnnIds(imgId)
+            # anns = coco_dt.loadAnns(annIds)
+            # print(json.dumps(anns, indent=4))
+
+            # print("\n\nGT: ")
+            # imgIds = self.coco_gt.getImgIds()
+            # # print("imgIds: ", imgIds)
+            # imgId = 256
+            # annIds = self.coco_gt.getAnnIds(imgId)
+            # anns = self.coco_gt.loadAnns(annIds)
+            # print(json.dumps(anns, indent=4))
+
+            # </DEBUG>
+
             coco_eval.params.imgIds = list(img_ids)
             coco_eval.params.useCats = self.useCats
             img_ids, eval_imgs = evaluate(coco_eval)
@@ -109,6 +131,10 @@ class CocoGroundingEvaluator(object):
                     for k, box in enumerate(boxes)
                 ]
             )
+            # <DEBUG>
+            # with open("/data_hdd/zhouzizheng/results/coco_results_test.json", "a") as f:
+            #     f.write(json.dumps(coco_results, indent=4))
+            # </DEBUG>
         return coco_results
 
     def prepare_for_coco_segmentation(self, predictions):

@@ -1,0 +1,28 @@
+{
+    "train": [
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/train2014",
+        "anno": "/data_hdd/zhouzizheng/data/refCOCO/refcoco_odvg.jsonl",
+        "dataset_mode": "myodvg"
+      },
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/train2014",
+        "anno": "/data_hdd/zhouzizheng/data/refCOCO/refcoco+_odvg.jsonl",
+        "dataset_mode": "myodvg"
+      },
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/train2014",
+        "anno": "/data_hdd/zhouzizheng/data/refCOCO/refcocog_odvg.jsonl",
+        "dataset_mode": "myodvg"
+      }
+
+    ],
+    "val": [
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/val2014",
+        "anno": "/data_hdd/zhouzizheng/data/COCO2014/annotations/instances_val2014.json",
+        "label_map": null,
+        "dataset_mode": "coco"
+      }
+    ]
+}

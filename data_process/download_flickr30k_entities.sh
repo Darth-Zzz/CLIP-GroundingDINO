@@ -1,0 +1,2 @@
+wget -c -P /data_hdd/zhouzizheng/data/Flickr30kEntities https://hf-mirror.com/datasets/nlphuji/flickr30k/resolve/main/flickr30k-images.zip
+wget -c -P /data_hdd/zhouzizheng/data/Flickr30kEntities https://hf-mirror.com/datasets/nlphuji/flickr30k/resolve/main/flickr_annotations_30k.csv

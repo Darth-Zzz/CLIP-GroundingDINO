@@ -9,6 +9,9 @@ import os, sys
 sys.path.append(os.path.dirname(sys.path[0]))
 
 import datasets.transforms as T
+from pycocotools.coco import COCO
+
+random.seed(0)
 
 class ODVGDataset(VisionDataset):
     """
@@ -128,6 +131,176 @@ class ODVGDataset(VisionDataset):
         return len(self.metas)
 
 
+class MyDataset(VisionDataset):
+    """
+    Args:
+        root (string): Root directory where images are downloaded to.
+        anno (string): Path to json annotation file.
+        label_map_anno (string):  Path to json label mapping file. Only for Object Detection
+        transform (callable, optional): A function/transform that  takes in an PIL image
+            and returns a transformed version. E.g, ``transforms.PILToTensor``
+        target_transform (callable, optional): A function/transform that takes in the
+            target and transforms it.
+        transforms (callable, optional): A function/transform that takes input sample and its target as entry
+            and returns a transformed version.
+    """
+
+    def __init__(
+        self,
+        root: str,
+        anno: str,
+        label_map_anno: str = None,
+        max_labels: int = 80,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+        transforms: Optional[Callable] = None,
+        coco_anno_file: str = None,
+    ) -> None:
+        super().__init__(root, transforms, transform, target_transform)
+        self.root = root
+        self.dataset_mode = "OD" if label_map_anno else "VG"
+        self.max_labels = max_labels
+        if self.dataset_mode == "OD":
+            self.load_label_map(label_map_anno)
+        self._load_metas(anno)
+        self.get_dataset_info()
+        if coco_anno_file:
+            self.coco = COCO(coco_anno_file)
+            catIds = self.coco.getCatIds()
+            self.imageIds_by_category = {catId: self.coco.getImgIds(catIds=catId)[:1000] for catId in catIds}
+        else:
+            self.coco = None
+
+
+    def load_label_map(self, label_map_anno):
+        with open(label_map_anno, 'r') as file:
+            self.label_map = json.load(file)
+        self.label_index = set(self.label_map.keys())
+
+    def _load_metas(self, anno):
+        with  open(anno, 'r')as f:
+            self.metas = [json.loads(line) for line in f]
+
+    def get_dataset_info(self):
+        print(f"  == total images: {len(self)}")
+        if self.dataset_mode == "OD":
+            print(f"  == total labels: {len(self.label_map)}")
+
+    def __getitem__(self, index: int):
+        meta = self.metas[index]
+        rel_path = meta["filename"]
+        abs_path = os.path.join(self.root, rel_path)
+        if not os.path.exists(abs_path):
+            raise FileNotFoundError(f"{abs_path} not found.")
+        image = Image.open(abs_path).convert('RGB')
+        w, h = image.size
+        if self.dataset_mode == "OD":
+            # There's a reference image with probability p1=0.5
+            # If there's a reference image, we delete the text with probability p2=0.5
+            p1, p2 = 0.5, 0.5
+            with_text = True
+            with_refimg = False
+            if random.random() < p1:
+                with_refimg = True
+                if random.random() < p2:
+                    with_text = False
+
+            anno = meta["detection"]
+            instances = [obj for obj in anno["instances"]]
+            if len(instances) == 0:
+                with_refimg = False
+                
+            if with_refimg:
+                if len(instances) == 1:
+                    reference_obj_index = 0
+                else:
+                    reference_obj_index = random.randint(0, len(instances)-1)
+                cat = instances[reference_obj_index]["category"]
+                catId = self.coco.getCatIds(catNms=[cat])[0]
+                refImgId = random.choice(self.imageIds_by_category[catId])
+                ref_rel_path = self.coco.loadImgs(ids=[refImgId])[0]["file_name"]
+                ref_abs_path = os.path.join(self.root, ref_rel_path)
+                reference = Image.open(ref_abs_path).convert('RGB')
+
+            else:
+                reference = Image.new('RGB', (224, 224), (0, 0, 0))
+
+            if with_text:
+                boxes = [obj["bbox"] for obj in instances]
+                # pos bbox labels
+                ori_classes = [str(obj["label"]) for obj in instances]
+            else:
+                boxes = []
+                ori_classes = []
+
+
+            if with_refimg:
+                boxes.append(instances[reference_obj_index]["bbox"]) # add the box for reference image
+                ori_classes.append("0") # 0 stands for reference image
+
+            pos_labels = set(ori_classes)
+            # neg bbox labels 
+            neg_labels = self.label_index.difference(pos_labels)
+             
+            vg_labels = list(pos_labels)
+            num_to_add = min(len(neg_labels), self.max_labels-len(pos_labels))
+            if num_to_add > 0:
+                vg_labels.extend(random.sample(neg_labels, num_to_add))
+            
+            # shuffle
+            for i in range(len(vg_labels)-1, 0, -1):
+                j = random.randint(0, i)
+                vg_labels[i], vg_labels[j] = vg_labels[j], vg_labels[i]
+
+            caption_list = [self.label_map[lb] for lb in vg_labels]
+            caption_dict = {item:index for index, item in enumerate(caption_list)}
+
+            caption = ' . '.join(caption_list) + ' .'
+            if with_text:
+                labels = [obj["label"] for obj in instances]
+            else:
+                labels = []
+            if with_refimg:
+                labels.append(0)
+
+            classes = [caption_dict[self.label_map[str(label)]] for label in labels]
+            boxes = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
+            classes = torch.tensor(classes, dtype=torch.int64)
+        elif self.dataset_mode == "VG":
+            reference = Image.new('RGB', (224, 224), (0, 0, 0)) # no reference image for VG dataset 
+            anno = meta["grounding"]
+            instances = [obj for obj in anno["regions"]]
+            boxes = [obj["bbox"] for obj in instances]
+            caption_list = [obj["phrase"] for obj in instances]
+            c = list(zip(boxes, caption_list))
+            random.shuffle(c)
+            boxes[:], caption_list[:] = zip(*c)
+            uni_caption_list  = list(set(caption_list))
+            label_map = {}
+            for idx in range(len(uni_caption_list)):
+                label_map[uni_caption_list[idx]] = idx
+            classes = [label_map[cap] for cap in caption_list]
+            caption = ' . '.join(uni_caption_list) + ' .'
+            boxes = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
+            classes = torch.tensor(classes, dtype=torch.int64)
+            caption_list = uni_caption_list
+        target = {}
+        target["size"] = torch.as_tensor([int(h), int(w)])
+        target["cap_list"] = caption_list
+        target["caption"] = caption
+        target["boxes"] = boxes
+        target["labels"] = classes
+        # size, cap_list, caption, bboxes, labels
+
+        if self.transforms is not None:
+            image, target = self.transforms(image, target)
+
+        return image, reference, target
+    
+
+    def __len__(self) -> int:
+        return len(self.metas)
+
 def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None):
 
     normalize = T.Compose([
@@ -234,6 +407,22 @@ def build_odvg(image_set, args, datasetinfo):
     print(img_folder, ann_file, label_map)
     dataset = ODVGDataset(img_folder, ann_file, label_map, max_labels=args.max_labels,
             transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args), 
+    )
+    return dataset
+
+def build_myodvg(image_set, args, datasetinfo):
+    img_folder = datasetinfo["root"]
+    ann_file = datasetinfo["anno"]
+    label_map = datasetinfo["label_map"] if "label_map" in datasetinfo else None
+    coco_anno_file = datasetinfo["coco"] if "coco" in datasetinfo else None
+    try:
+        strong_aug = args.strong_aug
+    except:
+        strong_aug = False
+    print(img_folder, ann_file, label_map)
+    dataset = MyDataset(img_folder, ann_file, label_map, max_labels=args.max_labels,
+            transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args),
+            coco_anno_file=coco_anno_file
     )
     return dataset
 

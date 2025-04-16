@@ -1,0 +1,52 @@
+{
+    "train": [
+      {
+        "root": "/data_hdd/zhouzizheng/data/Objects365-2020/train",
+        "anno": "/data_hdd/zhouzizheng/data/Objects365-2020/train/zhiyuan_objv2_train_odvg.jsonl",
+        "label_map": "/data_hdd/zhouzizheng/data/Objects365-2020/train/zhiyuan_objv2_train_label_map.json",
+        "coco": "/data_hdd/zhouzizheng/data/Objects365-2020/train/zhiyuan_objv2_train.json",
+        "dataset_mode": "myodvg"
+      },
+      {
+        "root": "/data_hdd/zhouzizheng/data/Objects365-2020/test",
+        "anno": "/data_hdd/zhouzizheng/data/Objects365-2020/test/zhiyuan_objv2_test_odvg.jsonl",
+        "label_map": "/data_hdd/zhouzizheng/data/Objects365-2020/test/zhiyuan_objv2_test_label_map.json",
+        "coco": "/data_hdd/zhouzizheng/data/Objects365-2020/test/images/zhiyuan_objv2_test.json",
+        "dataset_mode": "myodvg"
+      },
+      {
+        "root": "/data_hdd/zhouzizheng/data/GQA/images",
+        "anno": "/data_hdd/zhouzizheng/data/GQA/final_mixed_train_no_coco_odvg.jsonl",
+        "dataset_mode": "myodvg"
+      },
+      {
+        "root": "/data_hdd/zhouzizheng/data/Flickr30kEntities/flickr30k-images",
+        "anno": "/data_hdd/zhouzizheng/data/Flickr30kEntities/flickr30k_e2odvg.jsonl",
+        "dataset_mode": "myodvg"
+      },
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/train2014",
+        "anno": "/data_hdd/zhouzizheng/data/refCOCO/refcoco_odvg.jsonl",
+        "dataset_mode": "myodvg"
+      },
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/train2014",
+        "anno": "/data_hdd/zhouzizheng/data/refCOCO/refcoco+_odvg.jsonl",
+        "dataset_mode": "myodvg"
+      },
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/train2014",
+        "anno": "/data_hdd/zhouzizheng/data/refCOCO/refcocog_odvg.jsonl",
+        "dataset_mode": "myodvg"
+      }
+
+    ],
+    "val": [
+      {
+        "root": "/data_hdd/zhouzizheng/data/COCO2014/val2014",
+        "anno": "/data_hdd/zhouzizheng/data/COCO2014/annotations/instances_val2014.json",
+        "label_map": null,
+        "dataset_mode": "coco"
+      }
+    ]
+}

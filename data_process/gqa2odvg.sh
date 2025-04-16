@@ -1,0 +1,1 @@
+python gqa2odvg.py /data_hdd/zhouzizheng/data/GQA/final_mixed_train_no_coco.json

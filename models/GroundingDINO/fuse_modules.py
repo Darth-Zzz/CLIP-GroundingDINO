@@ -165,10 +165,10 @@ class BiMultiHeadAttention(nn.Module):
         value_l_states = self._shape(self.values_l_proj(l), -1, bsz)
 
         proj_shape = (bsz * self.num_heads, -1, self.head_dim)
-        query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape)
-        key_states = key_states.view(*proj_shape)
-        value_v_states = value_v_states.view(*proj_shape)
-        value_l_states = value_l_states.view(*proj_shape)
+        query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape) # bs*nhead, nimg, dim
+        key_states = key_states.view(*proj_shape) # bs*nhead, ntxt, dim
+        value_v_states = value_v_states.view(*proj_shape) # bs*nhead, nimg, dim
+        value_l_states = value_l_states.view(*proj_shape) # bs*nhead, ntxt, dim
 
         src_len = key_states.size(1)
         attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))  # bs*nhead, nimg, ntxt
@@ -190,7 +190,7 @@ class BiMultiHeadAttention(nn.Module):
                 attn_weights, max=50000
             )  # Do not increase 50000, data type half has quite limited range
 
-        attn_weights_T = attn_weights.transpose(1, 2)
+        attn_weights_T = attn_weights.transpose(1, 2) # bs*nhead, ntxt, nimg
         attn_weights_l = attn_weights_T - torch.max(attn_weights_T, dim=-1, keepdim=True)[0]
         if self.clamp_min_for_underflow:
             attn_weights_l = torch.clamp(
@@ -216,13 +216,13 @@ class BiMultiHeadAttention(nn.Module):
                 attention_mask_l[:, None, None, :].repeat(1, self.num_heads, 1, 1).flatten(0, 1)
             )
             attn_weights.masked_fill_(attention_mask_l, float("-inf"))
-        attn_weights_v = attn_weights.softmax(dim=-1)
+        attn_weights_v = attn_weights.softmax(dim=-1) # bs*nhead, nimg, ntxt
 
         attn_probs_v = F.dropout(attn_weights_v, p=self.dropout, training=self.training)
         attn_probs_l = F.dropout(attn_weights_l, p=self.dropout, training=self.training)
 
-        attn_output_v = torch.bmm(attn_probs_v, value_l_states)
-        attn_output_l = torch.bmm(attn_probs_l, value_v_states)
+        attn_output_v = torch.bmm(attn_probs_v, value_l_states) # bs*nhead, nimg, dim
+        attn_output_l = torch.bmm(attn_probs_l, value_v_states) # bs*nhead, ntxt, dim
 
         if attn_output_v.size() != (bsz * self.num_heads, tgt_len, self.head_dim):
             raise ValueError(

@@ -638,6 +638,83 @@ def build(image_set, args, datasetinfo):
     return dataset
 
 
+class MyCocoDetection(torchvision.datasets.CocoDetection):
+    def __init__(self, img_folder, ann_file, transforms, return_masks, aux_target_hacks=None, mode="text_and_image"):
+        super(CocoDetection, self).__init__(img_folder, ann_file)
+        self._transforms = transforms
+        self.prepare = ConvertCocoPolysToMask(return_masks)
+        self.aux_target_hacks = aux_target_hacks
+        self.mode = mode # text_and_image, text_only, image_only
+
+    def change_hack_attr(self, hackclassname, attrkv_dict):
+        target_class = dataset_hook_register[hackclassname]
+        for item in self.aux_target_hacks:
+            if isinstance(item, target_class):
+                for k,v in attrkv_dict.items():
+                    setattr(item, k, v)
+
+    def get_hack(self, hackclassname):
+        target_class = dataset_hook_register[hackclassname]
+        for item in self.aux_target_hacks:
+            if isinstance(item, target_class):
+                return item
+            
+    def _load_image(self, id: int) -> Image.Image:
+        path = self.coco.loadImgs(id)[0]["file_name"]
+        abs_path = os.path.join(self.root, path)
+        return Image.open(abs_path).convert("RGB")
+
+    def __getitem__(self, idx):
+        """
+        Output:
+            - target: dict of multiple items
+                - boxes: Tensor[num_box, 4]. \
+                    Init type: x0,y0,x1,y1. unnormalized data.
+                    Final type: cx,cy,w,h. normalized data. 
+        """
+        try:
+            img, target = super(CocoDetection, self).__getitem__(idx)
+        except:
+            print("Error idx: {}".format(idx))
+            idx += 1
+            img, target = super(CocoDetection, self).__getitem__(idx)
+        image_id = self.ids[idx]
+        target = {'image_id': image_id, 'annotations': target}
+        img, target = self.prepare(img, target)
+        
+        if self._transforms is not None:
+            img, target = self._transforms(img, target)
+
+        # convert to needed format
+        if self.aux_target_hacks is not None:
+            for hack_runner in self.aux_target_hacks:
+                target, img = hack_runner(target, img=img)
+
+        # TODO
+        if self.mode == "text_only":
+            pass
+        return img, target
+
+def build_mycoco(image_set, args, datasetinfo):
+    img_folder = datasetinfo["root"]
+    ann_file = datasetinfo["anno"]
+
+    # copy to local path
+    if os.environ.get('DATA_COPY_SHILONG') == 'INFO':
+        preparing_dataset(dict(img_folder=img_folder, ann_file=ann_file), image_set, args)
+
+    try:
+        strong_aug = args.strong_aug
+    except:
+        strong_aug = False
+    print(img_folder, ann_file)
+    dataset = CocoDetection(img_folder, ann_file, 
+            transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args), 
+            return_masks=args.masks,
+            aux_target_hacks=None,
+        )
+    return dataset
+
 if __name__ == "__main__":
     # Objects365 Val example
     dataset_o365 = CocoDetection(

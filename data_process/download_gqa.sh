@@ -1,0 +1,2 @@
+wget -c -P /data_hdd/zhouzizheng/data/GQA/gqa_images.zip https://nlp.stanford.edu/data/gqa/images.zip
+# wget -c -P /data_hdd/zhouzizheng/data/GQA https://hf-mirror.com/GLIPModel/GLIP/resolve/main/mdetr_annotations/final_mixed_train_no_coco.json

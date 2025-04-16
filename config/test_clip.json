@@ -1,0 +1,19 @@
+{
+    "train": [
+      {
+        "root": "/data_hdd/zhouzizheng/data/DetectEverything/train",
+        "anno": "/data_hdd/zhouzizheng/data/DetectEverything/annotations/odvg_train.jsonl",
+        "label_map": "/data_hdd/zhouzizheng/data/DetectEverything/annotations/label_map_train.json",
+        "coco": "/data_hdd/zhouzizheng/data/DetectEverything/annotations/coco_train.json",
+        "dataset_mode": "myodvg"
+      }
+    ],
+    "val": [
+      {
+        "root": "/data_hdd/zhouzizheng/data/DetectEverything/val",
+        "anno": "/data_hdd/zhouzizheng/data/DetectEverything/annotations/coco_val.json",
+        "label_map": null,
+        "dataset_mode": "coco"
+      }
+    ]
+}

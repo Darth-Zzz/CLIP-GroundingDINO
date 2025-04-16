@@ -11,7 +11,7 @@ from groundingdino.util import box_ops
 from groundingdino.util.slconfig import SLConfig
 from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 from groundingdino.util.vl_utils import create_positive_map_from_span
-
+from pycocotools.coco import COCO
 
 def plot_boxes_to_image(image_pil, tgt):
     H, W = tgt["size"]
@@ -93,7 +93,6 @@ def get_grounding_output(model, image, caption, box_threshold, text_threshold=No
         outputs = model(image[None], captions=[caption])
     logits = outputs["pred_logits"].sigmoid()[0]  # (nq, 256)
     boxes = outputs["pred_boxes"][0]  # (nq, 4)
-
     # filter output
     if token_spans is None:
         logits_filt = logits.cpu().clone()
@@ -179,6 +178,39 @@ if __name__ == "__main__":
     box_threshold = args.box_threshold
     text_threshold = args.text_threshold
     token_spans = args.token_spans
+    annotation_file = "/data_hdd/zhouzizheng/data/DetectEverything/annotations/coco_val.json"
+
+
+    # visualize gt
+    try:
+        image_pil, image = load_image(image_path)
+        coco = COCO(annotation_file)
+        images = coco.loadImgs(coco.getImgIds())
+        for image in images:
+            if image['file_name'] == os.path.basename(image_path):
+                image_id = image['id']
+                break
+        anns = coco.loadAnns(coco.getAnnIds(image_id))
+        H, W = image['height'], image['width']
+        gt_boxes = []
+        for ann in anns:
+            x, y, w, h = ann['bbox']
+            print(x, y, w, h)
+            xc, yc, w, h= (x + w / 2) / W, (y + h / 2) / H, w / W, h / H
+            gt_boxes.append([xc, yc, w, h])
+        gt_boxes = torch.tensor(gt_boxes)
+        gt_dict = {
+            "boxes": gt_boxes,
+            "size": [H, W],
+            "labels": [coco.loadCats(ann['category_id'])[0]['name'] for ann in anns]
+        }
+        print(gt_dict)
+        gt_with_box = plot_boxes_to_image(image_pil, gt_dict)[0]
+        save_path = os.path.join(output_dir, "gt.jpg")
+        gt_with_box.save(save_path)
+        print(f"======================\n{save_path} saved.\n")
+    except:
+        print("File not in val set. Skip visualizing GT.")
 
     # make dir
     os.makedirs(output_dir, exist_ok=True)
@@ -208,6 +240,7 @@ if __name__ == "__main__":
         "size": [size[1], size[0]],  # H,W
         "labels": pred_phrases,
     }
+    print(pred_dict)
     image_with_box = plot_boxes_to_image(image_pil, pred_dict)[0]
     save_path = os.path.join(output_dir, "pred.jpg")
     image_with_box.save(save_path)

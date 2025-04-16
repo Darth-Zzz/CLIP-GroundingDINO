@@ -19,7 +19,7 @@ import util.misc as utils
 
 import datasets
 from datasets import build_dataset, get_coco_api_from_dataset
-from engine import evaluate, train_one_epoch
+from engine import evaluate, train_one_epoch, train_one_epoch_clipgroundingdino, evaluate_clipgroundingdino
 
 from groundingdino.util.utils import clean_state_dict
 
@@ -153,8 +153,8 @@ def main(args):
         model._set_static_graph()
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logger.info('number of params:'+str(n_parameters))
-    logger.info("params before freezing:\n"+json.dumps({n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, indent=2))
+    # logger.info('number of params:'+str(n_parameters))
+    # logger.info("params before freezing:\n"+json.dumps({n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, indent=2))
 
     param_dicts = get_param_dict(args, model_without_ddp)
     
@@ -165,7 +165,7 @@ def main(args):
                 if keyword in name:
                     parameter.requires_grad_(False)
                     break
-    logger.info("params after freezing:\n"+json.dumps({n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, indent=2))
+    # logger.info("params after freezing:\n"+json.dumps({n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, indent=2))
 
     optimizer = torch.optim.AdamW(param_dicts, lr=args.lr,
                                   weight_decay=args.weight_decay)
@@ -220,6 +220,7 @@ def main(args):
 
     output_dir = Path(args.output_dir)
     if os.path.exists(os.path.join(args.output_dir, 'checkpoint.pth')):
+        print("Resume")
         args.resume = os.path.join(args.output_dir, 'checkpoint.pth')
     if args.resume:
         if args.resume.startswith('https'):
@@ -281,10 +282,14 @@ def main(args):
         epoch_start_time = time.time()
         if args.distributed:
             sampler_train.set_epoch(epoch)
-
-        train_stats = train_one_epoch(
-            model, criterion, data_loader_train, optimizer, device, epoch,
-            args.clip_max_norm, wo_class_error=wo_class_error, lr_scheduler=lr_scheduler, args=args, logger=(logger if args.save_log else None))
+        if args.modelname == "clipgroundingdino":
+            train_stats = train_one_epoch_clipgroundingdino(
+                model, criterion, data_loader_train, optimizer, device, epoch,
+                args.clip_max_norm, wo_class_error=wo_class_error, lr_scheduler=lr_scheduler, args=args, logger=(logger if args.save_log else None))
+        else:
+            train_stats = train_one_epoch(
+                model, criterion, data_loader_train, optimizer, device, epoch,
+                args.clip_max_norm, wo_class_error=wo_class_error, lr_scheduler=lr_scheduler, args=args, logger=(logger if args.save_log else None))
         if args.output_dir:
             checkpoint_paths = [output_dir / 'checkpoint.pth']
 
@@ -305,28 +310,35 @@ def main(args):
                 }
 
                 utils.save_on_master(weights, checkpoint_path)
-                
+        log_stats = {**{f'train_{k}': v for k, v in train_stats.items()}}
         # eval
-        test_stats, coco_evaluator = evaluate(
-            model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir,
-            wo_class_error=wo_class_error, args=args, logger=(logger if args.save_log else None)
-        )
-        map_regular = test_stats['coco_eval_bbox'][0]
-        _isbest = best_map_holder.update(map_regular, epoch, is_ema=False)
-        if _isbest:
-            checkpoint_path = output_dir / 'checkpoint_best_regular.pth'
-            utils.save_on_master({
-                'model': model_without_ddp.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'lr_scheduler': lr_scheduler.state_dict(),
-                'epoch': epoch,
-                'args': args,
-            }, checkpoint_path)
-        log_stats = {
-            **{f'train_{k}': v for k, v in train_stats.items()},
-            **{f'test_{k}': v for k, v in test_stats.items()},
-        }
-
+        if (epoch + 1) % args.eval_interval == 0:
+            if args.modelname == "clipgroundingdino":
+                test_stats, coco_evaluator = evaluate_clipgroundingdino(
+                    model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir,
+                    wo_class_error=wo_class_error, args=args, logger=(logger if args.save_log else None)
+                )
+            else:
+                test_stats, coco_evaluator = evaluate(
+                    model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir,
+                    wo_class_error=wo_class_error, args=args, logger=(logger if args.save_log else None)
+                )
+            map_regular = test_stats['coco_eval_bbox'][0]
+            _isbest = best_map_holder.update(map_regular, epoch, is_ema=False)
+            if _isbest:
+                checkpoint_path = output_dir / 'checkpoint_best_regular.pth'
+                utils.save_on_master({
+                    'model': model_without_ddp.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'lr_scheduler': lr_scheduler.state_dict(),
+                    'epoch': epoch,
+                    'args': args,
+                }, checkpoint_path)
+            # log_stats = {
+            #     **{f'train_{k}': v for k, v in train_stats.items()},
+            #     **{f'test_{k}': v for k, v in test_stats.items()},
+            # }
+            log_stats.update({f'test_{k}': v for k, v in test_stats.items()})
 
         try:
             log_stats.update({'now_time': str(datetime.datetime.now())})
@@ -342,7 +354,7 @@ def main(args):
                 f.write(json.dumps(log_stats) + "\n")
 
             # for evaluation logs
-            if coco_evaluator is not None:
+            if (epoch + 1) % args.eval_interval == 0 and coco_evaluator is not None:
                 (output_dir / 'eval').mkdir(exist_ok=True)
                 if "bbox" in coco_evaluator.coco_eval:
                     filenames = ['latest.pth']

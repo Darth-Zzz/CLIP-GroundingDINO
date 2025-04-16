@@ -310,6 +310,8 @@ class Transformer(nn.Module):
             ).sigmoid()  # sigmoid
 
             # gather tgt
+            # print(torch.sum(topk_proposals >= output_memory.shape[1]))
+            # print(output_memory.shape)
             tgt_undetach = torch.gather(
                 output_memory, 1, topk_proposals.unsqueeze(-1).repeat(1, 1, self.d_model)
             )
