@@ -228,15 +228,15 @@ def refcoco2odvg(ref_file, coco_ann_file, output_file):
     
 if __name__ == '__main__':
     # Ours
-    # train_image_list, val_image_list = ours2coco('/data_hdd/zhouzizheng/data/万物识别数据_20241213/data_cut', '/data_hdd/zhouzizheng/data/DetectEverything')
-    # copy_images(train_image_list, '/data_hdd/zhouzizheng/data/DetectEverything/train')
-    # copy_images(val_image_list, '/data_hdd/zhouzizheng/data/DetectEverything/val')
-    # coco2odvg('/data_hdd/zhouzizheng/data/DetectEverything/annotations/coco_train.json', '/data_hdd/zhouzizheng/data/DetectEverything/annotations/odvg_train.jsonl', '/data_hdd/zhouzizheng/data/DetectEverything/annotations/label_map_train.json')
+    train_image_list, val_image_list = ours2coco('/data_hdd/zhouzizheng/data/万物识别数据_20241213/data_cut', '/data_hdd/zhouzizheng/data/DetectEverything')
+    copy_images(train_image_list, '/data_hdd/zhouzizheng/data/DetectEverything/train')
+    copy_images(val_image_list, '/data_hdd/zhouzizheng/data/DetectEverything/val')
+    coco2odvg('/data_hdd/zhouzizheng/data/DetectEverything/annotations/coco_train.json', '/data_hdd/zhouzizheng/data/DetectEverything/annotations/odvg_train.jsonl', '/data_hdd/zhouzizheng/data/DetectEverything/annotations/label_map_train.json')
 
     # RefCOCO
-    # refcoco2odvg("/data_hdd/zhouzizheng/data/refCOCO/refcoco/refs(unc).p", "/data_hdd/zhouzizheng/data/refCOCO/refcoco/instances.json", "/data_hdd/zhouzizheng/data/refCOCO/refcoco_odvg.jsonl")
-    # refcoco2odvg("/data_hdd/zhouzizheng/data/refCOCO/refcoco+/refs(unc).p", "/data_hdd/zhouzizheng/data/refCOCO/refcoco+/instances.json", "/data_hdd/zhouzizheng/data/refCOCO/refcoco+_odvg.jsonl")
-    # refcoco2odvg("/data_hdd/zhouzizheng/data/refCOCO/refcocog/refs(umd).p", "/data_hdd/zhouzizheng/data/refCOCO/refcocog/instances.json", "/data_hdd/zhouzizheng/data/refCOCO/refcocog_odvg.jsonl")
+    refcoco2odvg("/data_hdd/zhouzizheng/data/refCOCO/refcoco/refs(unc).p", "/data_hdd/zhouzizheng/data/refCOCO/refcoco/instances.json", "/data_hdd/zhouzizheng/data/refCOCO/refcoco_odvg.jsonl")
+    refcoco2odvg("/data_hdd/zhouzizheng/data/refCOCO/refcoco+/refs(unc).p", "/data_hdd/zhouzizheng/data/refCOCO/refcoco+/instances.json", "/data_hdd/zhouzizheng/data/refCOCO/refcoco+_odvg.jsonl")
+    refcoco2odvg("/data_hdd/zhouzizheng/data/refCOCO/refcocog/refs(umd).p", "/data_hdd/zhouzizheng/data/refCOCO/refcocog/instances.json", "/data_hdd/zhouzizheng/data/refCOCO/refcocog_odvg.jsonl")
 
     # O365
     coco2odvg("/data_hdd/zhouzizheng/data/Objects365-2020/test/images/zhiyuan_objv2_test.json", "/data_hdd/zhouzizheng/data/Objects365-2020/test/zhiyuan_objv2_test_odvg.jsonl", "/data_hdd/zhouzizheng/data/Objects365-2020/test/zhiyuan_objv2_test_label_map.json")
