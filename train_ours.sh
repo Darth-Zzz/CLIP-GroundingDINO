@@ -1,6 +1,6 @@
 CFG=./config/cfg_odvg_clip.py
 DATASETS=./config/test_clip.json
-OUTPUT_DIR=/data_hdd/zhouzizheng/clip_test
+OUTPUT_DIR=/data_hdd/zhouzizheng/clip_test2
 # NNODES=${NNODES:-1}
 # NODE_RANK=${NODE_RANK:-0}
 # PORT=${PORT:-29500}
@@ -9,8 +9,10 @@ OUTPUT_DIR=/data_hdd/zhouzizheng/clip_test
 # Change ``pretrain_model_path`` to use a different pretrain. 
 # (e.g. GroundingDINO pretrain, DINO pretrain, Swin Transformer pretrain.)
 # If you don't want to use any pretrained model, just ignore this parameter.
-
+current_time=$(date "+%m-%d-%H-%M-%S")
+log_file="${current_time}.log"
 python main.py \
         --output_dir ${OUTPUT_DIR} \
         -c ${CFG} \
         --datasets ${DATASETS} \
+        > logs/${log_file}
