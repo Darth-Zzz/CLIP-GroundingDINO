@@ -533,7 +533,7 @@ class CLIPGroundingDINO(nn.Module):
         # prepare pred layers
         self.dec_pred_bbox_embed_share = dec_pred_bbox_embed_share
         # prepare class & box embed
-        _class_embed = ContrastiveEmbed()
+        _class_embed = ContrastiveEmbed(max_text_len=max_text_len+50)
 
         _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         nn.init.constant_(_bbox_embed.layers[-1].weight.data, 0)
@@ -722,8 +722,7 @@ class CLIPGroundingDINO(nn.Module):
                 layer_cls_embed(layer_hs, text_dict)
                 for layer_cls_embed, layer_hs in zip(self.class_embed, hs)
             ]
-        )
-
+        )[..., 50:]
         out = {"pred_logits": outputs_class[-1], "pred_boxes": outputs_coord_list[-1]}
 
         # Used to calculate losses
@@ -732,9 +731,9 @@ class CLIPGroundingDINO(nn.Module):
             samples.device
         )
         for b in range(bs):
-            for j in range(len_td):
+            for j in range(50, len_td):
                 if text_dict['text_token_mask'][b][j] == True:
-                    out['text_mask'][b][j] = True
+                    out['text_mask'][b][j - 50] = True
 
         # for intermediate outputs
         if self.aux_loss:
@@ -744,7 +743,7 @@ class CLIPGroundingDINO(nn.Module):
         if hs_enc is not None:
             # prepare intermediate outputs
             interm_coord = ref_enc[-1]
-            interm_class = self.transformer.enc_out_class_embed(hs_enc[-1], text_dict)
+            interm_class = self.transformer.enc_out_class_embed(hs_enc[-1], text_dict)[..., 50:]
             out['interm_outputs'] = {'pred_logits': interm_class, 'pred_boxes': interm_coord}
             out['interm_outputs_for_matching_pre'] = {'pred_logits': interm_class, 'pred_boxes': init_box_proposal}
 
@@ -884,7 +883,7 @@ class SetCriterion(nn.Module):
             total_num_pos += len(batch_indices[0])
         num_pos_avg_per_gpu = max(total_num_pos , 1.0)
         loss=loss.sum()/num_pos_avg_per_gpu
-        
+
         losses = {'loss_ce': loss}
         return losses
 
@@ -1056,9 +1055,10 @@ class PostProcess(nn.Module):
                     new_pos_map[v] = pos_map[k]
                 pos_map=new_pos_map
             else:
-                new_pos_map = torch.zeros((len(cat_list)+1, args.max_text_len))
-                new_pos_map[1:] = pos_map
-                pos_map=new_pos_map
+                # new_pos_map = torch.zeros((len(cat_list)+1, args.max_text_len))
+                # new_pos_map[1:] = pos_map
+                # pos_map=new_pos_map
+                pass
 
             self.positive_map = pos_map
         else:
@@ -1068,12 +1068,13 @@ class PostProcess(nn.Module):
             cat_lists = [cat_list[i: i+80] for i in range(0, len(cat_list), 80)]
             for cat_list in cat_lists:
                 caption = " . ".join(cat_list) + ' .'
+                print(caption)
                 tokenized = self.tokenizer(caption, padding="longest", return_tensors="pt")
                 label_list = torch.arange(len(cat_list))
                 pos_map=create_positive_map(tokenized,label_list,cat_list, caption, max_text_len=args.max_text_len)
-                new_pos_map = torch.zeros((len(cat_list)+1, args.max_text_len))
-                new_pos_map[1:] = pos_map
-                pos_map=new_pos_map
+                # new_pos_map = torch.zeros((len(cat_list)+1, args.max_text_len))
+                # new_pos_map[1:] = pos_map
+                # pos_map=new_pos_map
                 self.pos_map_list.append(pos_map)
         
         self.args = args    
