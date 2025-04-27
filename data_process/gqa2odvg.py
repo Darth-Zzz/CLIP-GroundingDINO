@@ -109,7 +109,7 @@ def goldg2odvg(args):
         region_list = []
         for key, value in regions.items():
             phrase = value['phrase']
-            if len(phrase) > 1:
+            if len(phrase) > 1 or len(phrase) == 0:
                 continue
             if len(phrase) == 1:
                 phrase = phrase[0]
